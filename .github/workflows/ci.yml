@@ -75,3 +75,42 @@ jobs:
           npm ci
           npm run lint:check
           npm run build
+
+  docker:
+    name: Docker images (build + compose smoke test)
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_PASSWORD: ci-postgres-password
+      JWT_ACCESS_SECRET: ci-access-secret-0123456789abcdef
+      JWT_REFRESH_SECRET: ci-refresh-secret-0123456789abcdef
+      CUSTOMER_TOKEN_SECRET: ci-customer-secret-0123456789abcdef
+      CORS_ORIGIN: https://widget.example.com
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build --target runtime -t loyalty-api:ci ./api
+      - name: Build dashboard image
+        run: docker build -t loyalty-dashboard:ci ./dashboard
+      - name: Validate compose file
+        run: docker compose -f docker-compose.prod.yml config --quiet
+      - name: Boot the stack
+        run: docker compose -f docker-compose.prod.yml up -d --build
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 36); do
+            if curl -sf http://localhost:8080/api/v1/health >/dev/null 2>&1; then
+              break
+            fi
+            sleep 5
+          done
+          # API reachable directly on its published port...
+          curl -sf http://localhost:3000/api/v1/health | grep -q '"status":"ok"'
+          # ...and through the dashboard's nginx proxy (same-origin path).
+          curl -sf http://localhost:8080/api/v1/health | grep -q '"status":"ok"'
+          # Dashboard SPA is served and nginx proxies Swagger.
+          curl -sf http://localhost:8080/ | grep -q '<div id="app">'
+          curl -sf http://localhost:8080/docs/ >/dev/null
+      - name: Stack logs
+        if: failure()
+        run: docker compose -f docker-compose.prod.yml logs
