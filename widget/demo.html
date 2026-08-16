@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loyalty Widget — local demo</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: #f3f4f6;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        margin: 0;
+      }
+      .card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 24px;
+        max-width: 420px;
+      }
+      code {
+        background: #f3f4f6;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Loyalty widget demo</h1>
+      <p>
+        Replace <code>business-id</code> below with the slug from your
+        registration, then keep this page open and click the gift button
+        bottom-right.
+      </p>
+      <p>
+        Use this with the dashboard's <strong>Check-in</strong> screen open to
+        scan the QR and earn a stamp.
+      </p>
+    </div>
+
+    <!--
+      Local dev: load the element from source and configure the API base.
+      When testing the built file, use:
+        <script src="/widget.js" data-business-id="..." data-api-base="http://localhost:3000/api/v1"></script>
+      served from the dist/ folder (e.g. `npx vite preview`).
+    -->
+    <script type="module">
+      import './src/loyalty-widget-element.ts';
+    </script>
+    <loyalty-widget business-id="seed-cafe" api-base="http://localhost:3000/api/v1"></loyalty-widget>
+  </body>
+</html>

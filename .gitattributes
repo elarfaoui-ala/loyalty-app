@@ -1,0 +1,16 @@
+# Normalize line endings: LF in the repo, native on checkout.
+* text=auto
+
+# Source and config files: force LF in the repo, autocrlf on Windows.
+*.ts text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+
+# Lock files are machine-generated; keep them stable.
+*.lock binary

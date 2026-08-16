@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RewardType {
+  PERCENT_OFF
+  FIXED_OFF
+  FREE_ITEM
+}
+
+enum RewardStatus {
+  PENDING
+  REDEEMED
+  EXPIRED
+}
+
+enum StampSource {
+  QR
+  API
+  MANUAL
+}
+
+enum WebhookEvent {
+  STAMP_CREATED
+  REWARD_CREATED
+  REWARD_REDEEMED
+}
+
+enum WebhookDeliveryStatus {
+  PENDING
+  SENT
+  FAILED // dead-lettered: retries exhausted, needs manual redelivery
+}
+
+model Business {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  email         String   @unique
+  passwordHash  String
+  apiKeyHash    String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Loyalty rule config
+  stampThreshold   Int        @default(10)
+  rewardType       RewardType @default(PERCENT_OFF)
+  rewardValue      Int        @default(100) // e.g. 100 = 100% off, or fixed cents/item count
+  rewardExpiryDays Int        @default(30)
+  stampCooldownSec Int        @default(300) // anti-abuse: min gap between stamps per card
+
+  // Branding shown in the widget
+  brandColor String @default("#111827")
+  logoUrl    String?
+
+  // Onboarding progress (0..4 steps completed by the owner)
+  onboardingStep Int @default(0)
+
+  cards         LoyaltyCard[]
+  refreshTokens RefreshToken[]
+  webhooks      WebhookEndpoint[]
+
+  @@index([slug])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+
+  cards LoyaltyCard[]
+
+  @@unique([email])
+  @@unique([phone])
+}
+
+model LoyaltyCard {
+  id             String   @id @default(cuid())
+  businessId     String
+  customerId     String
+  stamps         Int      @default(0)
+  totalRedeemed  Int      @default(0)
+  lastStampAt    DateTime?
+  createdAt      DateTime @default(now())
+
+  business    Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer    Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  stampEvents StampEvent[]
+  rewards     Reward[]
+
+  @@unique([businessId, customerId])
+  @@index([businessId])
+}
+
+model StampEvent {
+  id             String      @id @default(cuid())
+  cardId         String
+  source         StampSource
+  idempotencyKey String?     @unique
+  orderId        String?
+  createdAt      DateTime    @default(now())
+
+  card LoyaltyCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId])
+}
+
+model Reward {
+  id         String       @id @default(cuid())
+  cardId     String
+  type       RewardType
+  value      Int
+  status     RewardStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+  redeemedAt DateTime?
+  expiresAt  DateTime
+
+  card LoyaltyCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId])
+  @@index([status])
+}
+
+model RefreshToken {
+  id          String   @id @default(cuid())
+  businessId  String
+  tokenHash   String   @unique
+  fingerprint String   @unique // sha256 of the raw token: O(1) lookup on refresh
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  revokedAt   DateTime?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([expiresAt])
+}
+
+// One-time codes for passwordless customer login inside the widget
+model OtpCode {
+  id         String   @id @default(cuid())
+  businessId String
+  identifier String   // email or phone
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int      @default(0) // failed verify attempts; code invalidated at the cap
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, identifier, createdAt])
+  @@index([expiresAt])
+}
+
+// A URL a business wants loyalty events delivered to. `secret` signs outgoing
+// payloads (HMAC-SHA256 in the x-loyalty-signature header).
+model WebhookEndpoint {
+  id         String         @id @default(cuid())
+  businessId String
+  url        String
+  secret     String
+  events     WebhookEvent[]
+  enabled    Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  business   Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([businessId])
+}
+
+// Outbox: one row per event a webhook must deliver. Created atomically with
+// the domain event; a background loop delivers due rows with backoff.
+//
+// Concurrency: the loop claims rows with `FOR UPDATE SKIP LOCKED` and stamps
+// `claimedAt` so concurrent API instances never deliver the same row. A claim
+// older than the attempt timeout is reclaimed by the next pass (crash safety).
+model WebhookDelivery {
+  id            String               @id @default(cuid())
+  endpointId    String
+  event         WebhookEvent
+  payload       Json
+  status        WebhookDeliveryStatus @default(PENDING)
+  attempts      Int                  @default(0)
+  claimedAt     DateTime?
+  nextAttemptAt DateTime?
+  lastError     String?
+  createdAt     DateTime             @default(now())
+  sentAt        DateTime?
+
+  endpoint WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt])
+  @@index([endpointId, createdAt])
+}

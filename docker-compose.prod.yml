@@ -1,0 +1,83 @@
+# Production deployment: PostgreSQL + API + dashboard behind nginx.
+#
+#   cp .env.prod.example .env   # fill in the secrets
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Migrations run once (migrate service) before the API starts. The dashboard
+# is served on http://<host>:8080 and proxies /api/* and /docs to the API, so
+# same-origin access needs no CORS. The API is also published on :3000 for
+# widget clients; put a TLS-terminating reverse proxy in front of both in real
+# deployments and set CORS_ORIGIN to your widget site.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-loyalty}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-loyalty}
+    volumes:
+      - loyalty_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-loyalty}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: ./api
+      target: build
+    command: npx prisma migrate deploy
+    restart: "no"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-loyalty}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyalty}?schema=public}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ./api
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-loyalty}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyalty}?schema=public}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET (openssl rand -hex 32)}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET (openssl rand -hex 32)}
+      CUSTOMER_TOKEN_SECRET: ${CUSTOMER_TOKEN_SECRET:?set CUSTOMER_TOKEN_SECRET (openssl rand -hex 32)}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-30d}
+      OTP_TTL_SECONDS: ${OTP_TTL_SECONDS:-300}
+      CUSTOMER_TOKEN_TTL: ${CUSTOMER_TOKEN_TTL:-1h}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-Loyalty <onboarding@resend.dev>}
+      CORS_ORIGIN: ${CORS_ORIGIN:?set CORS_ORIGIN to your widget site origin (comma-separated)}
+    ports:
+      - "${API_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  dashboard:
+    build:
+      context: ./dashboard
+      args:
+        VITE_API_BASE: /api/v1
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${DASHBOARD_PORT:-8080}:80"
+
+volumes:
+  loyalty_pg_data:
