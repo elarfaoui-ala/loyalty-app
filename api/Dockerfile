@@ -1,6 +1,10 @@
 # --- build stage ---
 FROM node:20-alpine AS build
 WORKDIR /app
+# Prisma's engines need OpenSSL; on alpine3.21 the library lives in /usr/lib
+# but Prisma looks in /lib, so link it and install the toolchain.
+RUN apk add --no-cache openssl libc6-compat \
+    && ln -sf /usr/lib/libssl.so.3 /lib/libssl.so.3
 COPY package*.json ./
 COPY prisma ./prisma
 RUN npm ci
@@ -12,6 +16,8 @@ RUN npm run build
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+RUN apk add --no-cache openssl libc6-compat \
+    && ln -sf /usr/lib/libssl.so.3 /lib/libssl.so.3
 # `prisma` is a production dependency (not dev) so the migrate CLI and the
 # generated client are available at runtime below.
 COPY package*.json ./
