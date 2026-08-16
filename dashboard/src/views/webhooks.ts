@@ -24,6 +24,20 @@ interface WebhookDelivery {
   sentAt?: string | null;
 }
 
+interface WebhookStats {
+  endpoints: { total: number; enabled: number };
+  deliveries: {
+    total: number;
+    sent: number;
+    failed: number;
+    pending: number;
+    successRate: number;
+    avgAttempts: number;
+    retries: number;
+  };
+  daily: Array<{ day: string; sent: number; failed: number; pending: number }>;
+}
+
 const EVENT_LABELS: Record<WebhookEvent, string> = {
   STAMP_CREATED: 'stamp.created',
   REWARD_CREATED: 'reward.created',
@@ -45,6 +59,14 @@ export function renderWebhooks(app: HTMLElement): { destroy: () => void } {
         sign it with HMAC-SHA256 in the <code>x-loyalty-signature</code> header so you can verify it came
         from us.
       </p>
+
+      <div class="card" id="wh-stats-card">
+        <h2>Delivery health</h2>
+        <p class="muted">Aggregated across all endpoints — last 14 days.</p>
+        <div class="msg-error" id="wh-stats-error" style="display:none"></div>
+        <div class="stat-grid" id="wh-stat-grid"></div>
+        <div id="wh-chart"></div>
+      </div>
 
       <div class="card">
         <h2>Add endpoint</h2>
@@ -86,6 +108,81 @@ export function renderWebhooks(app: HTMLElement): { destroy: () => void } {
   const createForm = view.querySelector<HTMLFormElement>('#wh-create-form')!;
   const createError = view.querySelector<HTMLElement>('#wh-create-form .msg-error')!;
   const createOk = view.querySelector<HTMLElement>('#wh-create-form .msg-ok')!;
+  const statsGrid = view.querySelector<HTMLElement>('#wh-stat-grid')!;
+  const chartSlot = view.querySelector<HTMLElement>('#wh-chart')!;
+  const statsError = view.querySelector<HTMLElement>('#wh-stats-error')!;
+
+  const statTile = (value: string, label: string): HTMLElement => {
+    const node = el('<div class="stat"></div>');
+    const valueEl = el(`<div class="value">${escapeHtml(value)}</div>`);
+    const labelEl = el(`<div class="label">${escapeHtml(label)}</div>`);
+    node.append(valueEl, labelEl);
+    return node;
+  };
+
+  const renderChart = (stats: WebhookStats) => {
+    const maxTotal = Math.max(
+      1,
+      ...stats.daily.map((d) => d.sent + d.failed + d.pending),
+    );
+    const seg = (count: number, cls: 'sent' | 'failed' | 'pending') =>
+      count > 0
+        ? `<div class="wh-chart-seg ${cls}" style="height:${(count / maxTotal) * 100}%"></div>`
+        : '';
+    const days = stats.daily
+      .map(
+        (d) => `
+        <div class="wh-chart-col" title="${escapeHtml(d.day)}">
+          <div class="wh-chart-bars">
+            ${seg(d.sent, 'sent')}
+            ${seg(d.failed, 'failed')}
+            ${seg(d.pending, 'pending')}
+          </div>
+          <span class="wh-chart-day">${escapeHtml(d.day.slice(5))}</span>
+        </div>
+      `,
+      )
+      .join('');
+    const legend = (
+      [
+        ['sent', stats.deliveries.sent],
+        ['failed', stats.deliveries.failed],
+        ['pending', stats.deliveries.pending],
+      ] as const
+    )
+      .map(
+        ([key, count]) => `
+        <span class="wh-legend-item">
+          <span class="wh-dot wh-dot-${key}"></span>
+          ${key[0].toUpperCase()}${key.slice(1)} · ${count}
+        </span>
+      `,
+      )
+      .join('');
+    chartSlot.replaceChildren(
+      el(`<div><div class="wh-chart">${days}</div><div class="wh-legend">${legend}</div></div>`),
+    );
+  };
+
+  const loadStats = async () => {
+    try {
+      const stats = await api<WebhookStats>('/businesses/me/webhooks/stats');
+      const d = stats.deliveries;
+      const completed = d.sent + d.failed;
+      const rate =
+        completed > 0 ? `${Math.round(d.successRate * 100)}% of completed` : 'no completed deliveries';
+      statsGrid.replaceChildren(
+        statTile(String(d.sent), `Delivered · ${rate}`),
+        statTile(String(d.failed), 'Dead-lettered'),
+        statTile(String(d.retries), 'Retries'),
+        statTile(d.avgAttempts.toFixed(1), 'Avg attempts'),
+      );
+      renderChart(stats);
+    } catch (err) {
+      statsError.textContent = (err as Error).message;
+      statsError.style.display = '';
+    }
+  };
 
   const showListError = (message: string) => {
     listError.textContent = message;
@@ -286,7 +383,8 @@ export function renderWebhooks(app: HTMLElement): { destroy: () => void } {
             created.secret,
         );
       }
-      void renderEndpoints();
+  void renderEndpoints();
+  void loadStats();
     } catch (err) {
       createError.textContent = (err as Error).message;
       createError.style.display = '';

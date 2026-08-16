@@ -607,6 +607,35 @@ describe('Loyalty API (e2e)', () => {
       expect(deadRow?.lastError).toBeTruthy();
     });
 
+    it('exposes aggregate delivery stats', async () => {
+      const res = await json<{
+        endpoints: { total: number; enabled: number };
+        deliveries: {
+          total: number;
+          sent: number;
+          failed: number;
+          pending: number;
+          successRate: number;
+          avgAttempts: number;
+          retries: number;
+        };
+        daily: Array<{ day: string; sent: number; failed: number; pending: number }>;
+      }>('/businesses/me/webhooks/stats', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.endpoints.total).toBeGreaterThan(0);
+      expect(res.body.deliveries.total).toBeGreaterThan(0);
+      expect(res.body.deliveries.sent).toBeGreaterThan(0);
+      expect(res.body.deliveries.failed).toBeGreaterThan(0);
+      expect(res.body.deliveries.successRate).toBeGreaterThan(0);
+      expect(res.body.deliveries.successRate).toBeLessThan(1);
+      expect(res.body.deliveries.retries).toBeGreaterThanOrEqual(0);
+      expect(res.body.deliveries.avgAttempts).toBeGreaterThan(0);
+      expect(res.body.daily.length).toBe(14);
+      expect(res.body.daily.some((d) => d.sent > 0)).toBe(true);
+    });
+
     it('redelivers a dead-lettered delivery on request', async () => {
       // The retry route is scoped to the owning endpoint.
       const wrongEp = await postJson(

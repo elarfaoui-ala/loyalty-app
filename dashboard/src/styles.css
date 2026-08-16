@@ -608,3 +608,84 @@ pre.api-key {
 .wh-delivery-meta button {
   font-size: 12px;
 }
+
+.wh-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-top: 18px;
+}
+
+.wh-chart-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.wh-chart-bars {
+  width: 100%;
+  height: 110px;
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 1px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.wh-chart-seg {
+  width: 100%;
+}
+
+.wh-chart-seg.sent {
+  background: #16a34a;
+}
+
+.wh-chart-seg.failed {
+  background: #dc2626;
+}
+
+.wh-chart-seg.pending {
+  background: #d97706;
+}
+
+.wh-chart-day {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.wh-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.wh-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wh-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.wh-dot-sent {
+  background: #16a34a;
+}
+
+.wh-dot-failed {
+  background: #dc2626;
+}
+
+.wh-dot-pending {
+  background: #d97706;
+}

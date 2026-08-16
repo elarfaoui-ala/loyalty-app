@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { BusinessJwtGuard } from '../common/guards/business-jwt.guard';
 import { PrismaService } from '../prisma.service';
@@ -110,6 +111,104 @@ export class WebhooksController {
       },
     );
     return { ok: true, note: 'Test event queued — delivery may take a few seconds.' };
+  }
+
+  @ApiOperation({ summary: 'Webhook delivery stats', description: 'Aggregate delivery totals, success rate, retries, and a per-day series for the last N days (default 14, max 90).' })
+  @Get('stats')
+  async stats(
+    @Req() req: { businessId: string },
+    @Query('days') days?: string,
+  ) {
+    const windowDays = Math.min(Math.max(Number(days) || 14, 1), 90);
+    const startOfToday = new Date();
+    startOfToday.setUTCHours(0, 0, 0, 0);
+    const since = new Date(
+      startOfToday.getTime() - (windowDays - 1) * 86_400_000,
+    );
+
+    const [endpointTotal, endpointEnabled, aggregate, daily] =
+      await Promise.all([
+        this.prisma.webhookEndpoint.count({
+          where: { businessId: req.businessId },
+        }),
+        this.prisma.webhookEndpoint.count({
+          where: { businessId: req.businessId, enabled: true },
+        }),
+        this.prisma.$queryRaw<Array<{
+          total: number;
+          sent: number;
+          failed: number;
+          pending: number;
+          totalAttempts: number;
+          retries: number;
+        }>>(Prisma.sql`
+          SELECT
+            COUNT(*)::int AS "total",
+            COUNT(*) FILTER (WHERE d."status" = 'SENT')::int AS "sent",
+            COUNT(*) FILTER (WHERE d."status" = 'FAILED')::int AS "failed",
+            COUNT(*) FILTER (WHERE d."status" = 'PENDING')::int AS "pending",
+            COALESCE(SUM(d."attempts"), 0)::int AS "totalAttempts",
+            COALESCE(SUM(GREATEST(d."attempts" - 1, 0)), 0)::int AS "retries"
+          FROM "WebhookDelivery" d
+          INNER JOIN "WebhookEndpoint" e ON e."id" = d."endpointId"
+          WHERE e."businessId" = ${req.businessId}
+        `),
+        this.prisma.$queryRaw<Array<{
+          day: string;
+          sent: number;
+          failed: number;
+          pending: number;
+        }>>(Prisma.sql`
+          SELECT
+            to_char(d."createdAt", 'YYYY-MM-DD') AS "day",
+            COUNT(*) FILTER (WHERE d."status" = 'SENT')::int AS "sent",
+            COUNT(*) FILTER (WHERE d."status" = 'FAILED')::int AS "failed",
+            COUNT(*) FILTER (WHERE d."status" = 'PENDING')::int AS "pending"
+          FROM "WebhookDelivery" d
+          INNER JOIN "WebhookEndpoint" e ON e."id" = d."endpointId"
+          WHERE e."businessId" = ${req.businessId}
+            AND d."createdAt" >= ${since}
+          GROUP BY "day"
+          ORDER BY "day" ASC
+        `),
+      ]);
+
+    const totals = aggregate[0] ?? {
+      total: 0,
+      sent: 0,
+      failed: 0,
+      pending: 0,
+      totalAttempts: 0,
+      retries: 0,
+    };
+    const completed = totals.sent + totals.failed;
+    const successRate =
+      completed > 0 ? Math.round((totals.sent / completed) * 10_000) / 10_000 : 0;
+    const avgAttempts =
+      totals.total > 0 ? Math.round((totals.totalAttempts / totals.total) * 100) / 100 : 0;
+
+    const byDay = new Map(daily.map((d) => [d.day, d]));
+    const series: Array<{ day: string; sent: number; failed: number; pending: number }> = [];
+    for (let i = 0; i < windowDays; i++) {
+      const day = new Date(since.getTime() + i * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+      series.push(byDay.get(day) ?? { day, sent: 0, failed: 0, pending: 0 });
+    }
+
+    return {
+      endpoints: { total: endpointTotal, enabled: endpointEnabled },
+      deliveries: {
+        total: totals.total,
+        sent: totals.sent,
+        failed: totals.failed,
+        pending: totals.pending,
+        successRate,
+        avgAttempts,
+        retries: totals.retries,
+      },
+      daily: series,
+    };
   }
 
   @ApiOperation({ summary: 'Recent delivery attempts for an endpoint' })
