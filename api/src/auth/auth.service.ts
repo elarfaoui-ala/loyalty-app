@@ -197,11 +197,15 @@ export class AuthService {
   }
 
   private async issueTokens(businessId: string) {
+    // A unique `jti` is mandatory: JWT `iat` only has second granularity, so
+    // two issues within the same second would otherwise produce byte-identical
+    // tokens whose fingerprints collide on the RefreshToken unique index.
     const accessToken = this.jwt.sign(
       { sub: businessId },
       {
         secret: process.env.JWT_ACCESS_SECRET,
         expiresIn: process.env.JWT_ACCESS_TTL ?? '15m',
+        jwtid: nanoid(),
       },
     );
     const refreshToken = this.jwt.sign(
@@ -209,6 +213,7 @@ export class AuthService {
       {
         secret: process.env.JWT_REFRESH_SECRET,
         expiresIn: process.env.JWT_REFRESH_TTL ?? '30d',
+        jwtid: nanoid(),
       },
     );
 
