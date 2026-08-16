@@ -32,8 +32,8 @@ jobs:
       run:
         working-directory: api
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -55,8 +55,8 @@ jobs:
     name: Widget + Dashboard (lint, typecheck, build)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -86,7 +86,7 @@ jobs:
       CUSTOMER_TOKEN_SECRET: ci-customer-secret-0123456789abcdef
       CORS_ORIGIN: https://widget.example.com
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build API image
         run: docker build --target runtime -t loyalty-api:ci ./api
       - name: Build dashboard image
