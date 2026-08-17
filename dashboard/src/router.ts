@@ -7,9 +7,10 @@ export type Route =
   | 'checkin'
   | 'integrate'
   | 'webhooks'
+  | 'audit'
   | 'settings';
 
-const ROUTES: Route[] = ['login', 'overview', 'customers', 'checkin', 'integrate', 'webhooks', 'settings'];
+const ROUTES: Route[] = ['login', 'overview', 'customers', 'checkin', 'integrate', 'webhooks', 'audit', 'settings'];
 
 export function currentRoute(): Route {
   let route = location.hash.replace(/^#\//, '') as Route;

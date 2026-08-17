@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TenantThrottlerGuard } from './common/guards/tenant-throttler.guard';
 import { AuthModule } from './auth/auth.module';
+import { AuditModule } from './audit/audit.module';
 import { BusinessesModule } from './businesses/businesses.module';
 import { CustomersModule } from './customers/customers.module';
 import { AccessLogInterceptor } from './common/interceptors/access-log.interceptor';
@@ -25,6 +26,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     PrismaModule,
     ScheduleModule.forRoot(),
     AuthModule,
+    AuditModule,
     BusinessesModule,
     CustomersModule,
     StampsModule,

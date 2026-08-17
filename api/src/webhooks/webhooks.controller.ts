@@ -16,6 +16,7 @@ import { randomBytes } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { BusinessJwtGuard } from '../common/guards/business-jwt.guard';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma.service';
 import { WebhookService } from './webhook.service';
 import {
@@ -32,6 +33,7 @@ export class WebhooksController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly webhooks: WebhookService,
+    private readonly audit: AuditService,
   ) {}
 
   @ApiOperation({ summary: 'List webhook endpoints' })
@@ -57,7 +59,7 @@ export class WebhooksController {
   @Post()
   async create(@Req() req: { businessId: string }, @Body() dto: CreateWebhookDto) {
     const secret = randomBytes(32).toString('hex');
-    return this.prisma.webhookEndpoint.create({
+    const ep = await this.prisma.webhookEndpoint.create({
       data: {
         businessId: req.businessId,
         url: dto.url,
@@ -66,6 +68,12 @@ export class WebhooksController {
         enabled: dto.enabled ?? true,
       },
     });
+    await this.audit.log(req.businessId, 'webhook.created', {
+      endpointId: ep.id,
+      url: dto.url,
+      events: dto.events,
+    });
+    return ep;
   }
 
   @ApiOperation({ summary: 'Update a webhook endpoint' })
@@ -76,7 +84,7 @@ export class WebhooksController {
     @Body() dto: UpdateWebhookDto,
   ) {
     const ep = await this.findEndpoint(req.businessId, id);
-    return this.prisma.webhookEndpoint.update({
+    const updated = await this.prisma.webhookEndpoint.update({
       where: { id: ep.id },
       data: {
         ...(dto.url !== undefined ? { url: dto.url } : {}),
@@ -84,6 +92,11 @@ export class WebhooksController {
         ...(dto.enabled !== undefined ? { enabled: dto.enabled } : {}),
       },
     });
+    await this.audit.log(req.businessId, 'webhook.updated', {
+      endpointId: ep.id,
+      ...dto,
+    });
+    return updated;
   }
 
   @ApiOperation({ summary: 'Delete a webhook endpoint' })
@@ -91,6 +104,10 @@ export class WebhooksController {
   async remove(@Req() req: { businessId: string }, @Param('id') id: string) {
     const ep = await this.findEndpoint(req.businessId, id);
     await this.prisma.webhookEndpoint.delete({ where: { id: ep.id } });
+    await this.audit.log(req.businessId, 'webhook.deleted', {
+      endpointId: ep.id,
+      url: ep.url,
+    });
     return { ok: true };
   }
 
@@ -110,6 +127,7 @@ export class WebhooksController {
         threshold: 10,
       },
     );
+    await this.audit.log(req.businessId, 'webhook.tested', { endpointId: id });
     return { ok: true, note: 'Test event queued — delivery may take a few seconds.' };
   }
 
@@ -255,6 +273,10 @@ export class WebhooksController {
       );
     }
     await this.webhooks.retryDelivery(deliveryId);
+    await this.audit.log(req.businessId, 'webhook.delivery_redelivered', {
+      endpointId: ep.id,
+      deliveryId,
+    });
     return { retried: true, deliveryId };
   }
 

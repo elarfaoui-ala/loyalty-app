@@ -5,6 +5,7 @@ import { Business } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
 import { BusinessJwtGuard } from '../common/guards/business-jwt.guard';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma.service';
 import { OnboardingDto } from './dto/onboarding.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
@@ -17,6 +18,7 @@ export class BusinessesController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly audit: AuditService,
   ) {}
 
   @Get()
@@ -29,9 +31,18 @@ export class BusinessesController {
 
   @Patch()
   async update(@Req() req: { businessId: string }, @Body() dto: UpdateBusinessDto) {
+    const before = await this.prisma.business.findUniqueOrThrow({
+      where: { id: req.businessId },
+    });
     const business = await this.prisma.business.update({
       where: { id: req.businessId },
       data: dto,
+    });
+    await this.audit.log(req.businessId, 'settings.updated', {
+      changed: Object.keys(dto),
+      previous: Object.fromEntries(
+        Object.keys(dto).filter((k) => k in before).map((k) => [k, (before as Record<string, unknown>)[k]]),
+      ),
     });
     return this.toSafeBusiness(business);
   }
@@ -100,6 +111,7 @@ export class BusinessesController {
       where: { id: business.id },
       data: { apiKeyHash },
     });
+    await this.audit.log(req.businessId, 'api_key.rotated');
     return { apiKey: plaintextApiKey };
   }
 

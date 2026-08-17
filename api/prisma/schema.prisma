@@ -199,3 +199,13 @@ model WebhookDelivery {
   @@index([status, nextAttemptAt])
   @@index([endpointId, createdAt])
 }
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  businessId String
+  action     String   // e.g. settings.updated, api_key.rotated, webhook.created
+  details    Json?    // optional structured payload (old/new values, etc.)
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, createdAt])
+}
