@@ -8,6 +8,7 @@ import { renderCheckin } from './views/checkin';
 import { renderIntegrate } from './views/integrate';
 import { renderSettings } from './views/settings';
 import { renderWebhooks } from './views/webhooks';
+import { renderCustomers } from './views/customers';
 
 interface ViewHandle {
   destroy?: () => void;
@@ -18,6 +19,7 @@ let active: ViewHandle = {};
 
 const NAV: Array<{ route: Route; label: string }> = [
   { route: 'overview', label: 'Overview' },
+  { route: 'customers', label: 'Customers' },
   { route: 'checkin', label: 'Check-in' },
   { route: 'integrate', label: 'Integrate' },
   { route: 'webhooks', label: 'Webhooks' },
@@ -61,6 +63,7 @@ function render() {
   const main = app.querySelector('main')!;
 
   if (route === 'overview') active = renderOverview(main);
+  else if (route === 'customers') active = renderCustomers(main);
   else if (route === 'checkin') active = renderCheckin(main);
   else if (route === 'integrate') active = renderIntegrate(main);
   else if (route === 'webhooks') active = renderWebhooks(main);

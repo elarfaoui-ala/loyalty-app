@@ -4,6 +4,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { BusinessesModule } from './businesses/businesses.module';
+import { CustomersModule } from './customers/customers.module';
 import { AccessLogInterceptor } from './common/interceptors/access-log.interceptor';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { HealthController } from './health.controller';
@@ -21,6 +22,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     PrismaModule,
     AuthModule,
     BusinessesModule,
+    CustomersModule,
     StampsModule,
     PublicModule,
     WebhooksModule,

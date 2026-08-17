@@ -689,3 +689,99 @@ pre.api-key {
 .wh-dot-pending {
   background: #d97706;
 }
+
+/* Customers */
+.cust-search-card {
+  padding: 16px;
+}
+
+.cust-search-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.cust-search-row input {
+  flex: 1;
+}
+
+.cust-search-row select {
+  width: auto;
+}
+
+.cust-row {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.cust-row:hover {
+  border-color: #9ca3af;
+}
+
+.cust-row-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cust-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cust-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cust-joined {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.cust-pager {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  justify-content: center;
+}
+
+.cust-back {
+  margin-bottom: 12px;
+}
+
+.cust-detail-meta {
+  margin-top: 4px;
+}
+
+.cust-events {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cust-event {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.cust-event .tag {
+  margin-right: 6px;
+}

@@ -3,12 +3,13 @@ import { isAuthed } from './api';
 export type Route =
   | 'login'
   | 'overview'
+  | 'customers'
   | 'checkin'
   | 'integrate'
   | 'webhooks'
   | 'settings';
 
-const ROUTES: Route[] = ['login', 'overview', 'checkin', 'integrate', 'webhooks', 'settings'];
+const ROUTES: Route[] = ['login', 'overview', 'customers', 'checkin', 'integrate', 'webhooks', 'settings'];
 
 export function currentRoute(): Route {
   let route = location.hash.replace(/^#\//, '') as Route;
