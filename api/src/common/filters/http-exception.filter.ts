@@ -15,7 +15,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<
+      Request & { requestId?: string; businessId?: string }
+    >();
 
     const isHttp = exception instanceof HttpException;
     const status = isHttp
@@ -26,9 +28,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
       ? (exception as HttpException).getResponse()
       : { message: 'Internal server error' };
 
+    const requestId = request.requestId ?? '';
+    const prefix = requestId ? `[${requestId}] ` : '';
+
     if (!isHttp) {
       this.logger.error(
-        `Unhandled exception on ${request.method} ${request.url}`,
+        `${prefix}Unhandled exception on ${request.method} ${request.url}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
+    } else if (status >= 500) {
+      this.logger.error(
+        `${prefix}${status} ${request.method} ${request.url}`,
         exception instanceof Error ? exception.stack : String(exception),
       );
     }
@@ -37,6 +47,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       statusCode: status,
       path: request.url,
       timestamp: new Date().toISOString(),
+      ...(requestId ? { requestId } : {}),
       ...(typeof body === 'string' ? { message: body } : body),
     });
   }
