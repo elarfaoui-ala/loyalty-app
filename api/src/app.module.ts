@@ -9,7 +9,7 @@ import { AuditModule } from './audit/audit.module';
 import { BusinessesModule } from './businesses/businesses.module';
 import { CustomersModule } from './customers/customers.module';
 import { AccessLogInterceptor } from './common/interceptors/access-log.interceptor';
-import { NotificationService } from './common/notification.service';
+import { NotificationModule } from './common/notification.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { HealthController } from './health.controller';
 import { PrismaModule } from './prisma.module';
@@ -32,6 +32,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     CustomersModule,
     StampsModule,
     PublicModule,
+    NotificationModule,
     SchedulerModule,
     WebhooksModule,
   ],
@@ -39,7 +40,6 @@ import { WebhooksModule } from './webhooks/webhooks.module';
   providers: [
     { provide: APP_GUARD, useClass: TenantThrottlerGuard },
     { provide: APP_INTERCEPTOR, useClass: AccessLogInterceptor },
-    NotificationService,
   ],
 })
 export class AppModule implements NestModule {

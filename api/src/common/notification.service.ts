@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Global, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 
 /**
@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma.service';
  * - Falls back to console logging in development so the app works without
  *   an email provider.
  */
+@Global()
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
