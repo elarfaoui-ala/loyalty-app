@@ -92,6 +92,19 @@ export function renderCustomers(app: HTMLElement): { destroy: () => void } {
         <div class="stat-grid" id="cust-summary"></div>
       </div>
 
+      <div class="card">
+        <h2>Add customer</h2>
+        <form id="cust-add-form">
+          <label for="cust-add-email">Email</label>
+          <input id="cust-add-email" type="email" placeholder="customer@example.com" />
+          <label for="cust-add-phone">Phone (optional)</label>
+          <input id="cust-add-phone" type="tel" placeholder="+1234567890" />
+          <div class="msg-error" id="cust-add-error" style="display:none"></div>
+          <div class="msg-ok" id="cust-add-ok" style="display:none"></div>
+          <button class="primary" type="submit">Add customer</button>
+        </form>
+      </div>
+
       <div class="card" id="cust-list-card">
         <h2>Customers</h2>
         <div id="cust-list"><p class="muted">Loading…</p></div>
@@ -328,6 +341,41 @@ export function renderCustomers(app: HTMLElement): { destroy: () => void } {
   sortSelect.addEventListener('change', () => {
     currentPage = 1;
     void renderList();
+  });
+
+  // Add customer form
+  const addForm = view.querySelector<HTMLFormElement>('#cust-add-form')!;
+  const addError = view.querySelector<HTMLElement>('#cust-add-error')!;
+  const addOk = view.querySelector<HTMLElement>('#cust-add-ok')!;
+
+  addForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    addError.style.display = 'none';
+    addOk.style.display = 'none';
+
+    const email = view.querySelector<HTMLInputElement>('#cust-add-email')!.value.trim();
+    const phone = view.querySelector<HTMLInputElement>('#cust-add-phone')!.value.trim();
+
+    if (!email && !phone) {
+      addError.textContent = 'Enter an email or phone number.';
+      addError.style.display = '';
+      return;
+    }
+
+    try {
+      await api('/businesses/me/customers', {
+        method: 'POST',
+        body: { email: email || undefined, phone: phone || undefined },
+      });
+      view.querySelector<HTMLInputElement>('#cust-add-email')!.value = '';
+      view.querySelector<HTMLInputElement>('#cust-add-phone')!.value = '';
+      addOk.textContent = 'Customer added.';
+      addOk.style.display = '';
+      void renderList();
+    } catch (err) {
+      addError.textContent = (err as Error).message;
+      addError.style.display = '';
+    }
   });
 
   void renderList();

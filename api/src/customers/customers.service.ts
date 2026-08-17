@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 
 @Injectable()
@@ -136,5 +136,42 @@ export class CustomersService {
         })),
       },
     };
+  }
+
+  /**
+   * Manually creates a customer and their loyalty card for this business.
+   * Used by the business owner from the dashboard.
+   */
+  async create(businessId: string, email?: string, phone?: string) {
+    const existing = await this.prisma.customer.findFirst({
+      where: {
+        ...(email ? { email } : {}),
+        ...(phone ? { phone } : {}),
+      },
+      include: {
+        cards: { where: { businessId }, select: { id: true } },
+      },
+    });
+
+    if (existing) {
+      if (existing.cards.length > 0) {
+        throw new ConflictException(
+          'A customer with this email or phone already exists for this business',
+        );
+      }
+      // Customer exists from another business — just link them to this one.
+      const card = await this.prisma.loyaltyCard.create({
+        data: { businessId, customerId: existing.id },
+      });
+      return { id: existing.id, email: existing.email, phone: existing.phone, card };
+    }
+
+    const customer = await this.prisma.customer.create({
+      data: { email: email ?? undefined, phone: phone ?? undefined },
+    });
+    const card = await this.prisma.loyaltyCard.create({
+      data: { businessId, customerId: customer.id },
+    });
+    return { id: customer.id, email: customer.email, phone: customer.phone, card };
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { BusinessJwtGuard } from '../common/guards/business-jwt.guard';
 import { CustomersService } from './customers.service';
@@ -29,5 +29,16 @@ export class CustomersController {
   @Get(':id')
   detail(@Req() req: { businessId: string }, @Param('id') id: string) {
     return this.customers.detail(req.businessId, id);
+  }
+
+  @Post()
+  create(
+    @Req() req: { businessId: string },
+    @Body() body: { email?: string; phone?: string },
+  ) {
+    if (!body.email && !body.phone) {
+      throw new BadRequestException('email or phone is required');
+    }
+    return this.customers.create(req.businessId, body.email, body.phone);
   }
 }
