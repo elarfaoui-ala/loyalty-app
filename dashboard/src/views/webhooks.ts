@@ -1,5 +1,6 @@
 import { api } from '../api';
 import { el, escapeHtml } from '../dom';
+import { icons } from '../icons';
 
 export type WebhookEvent = 'STAMP_CREATED' | 'REWARD_CREATED' | 'REWARD_REDEEMED';
 
@@ -53,12 +54,14 @@ const EVENT_DESCRIPTIONS: Record<WebhookEvent, string> = {
 export function renderWebhooks(app: HTMLElement): { destroy: () => void } {
   const view = el(`
     <div>
-      <h1>Webhooks</h1>
-      <p class="muted">
-        Deliver loyalty events to your server in real time. We POST a JSON payload to your URL and
-        sign it with HMAC-SHA256 in the <code>x-loyalty-signature</code> header so you can verify it came
-        from us.
-      </p>
+      <div class="page-header">
+        <h1>${icons.webhooks} Webhooks</h1>
+        <p>
+          Deliver loyalty events to your server in real time. We POST a JSON payload to your URL and
+          sign it with HMAC-SHA256 in the <code>x-loyalty-signature</code> header so you can verify it came
+          from us.
+        </p>
+      </div>
 
       <div class="card" id="wh-stats-card">
         <h2>Delivery health</h2>

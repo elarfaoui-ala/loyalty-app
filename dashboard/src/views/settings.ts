@@ -1,5 +1,6 @@
 import { api, BusinessMe, storeTokens, setOnboardingStep } from '../api';
 import { el, escapeHtml } from '../dom';
+import { icons } from '../icons';
 import { renderPreview } from './integrate';
 
 type UpdatePayload = Partial<{
@@ -16,9 +17,13 @@ type UpdatePayload = Partial<{
 export function renderSettings(app: HTMLElement): { destroy: () => void } {
   const view = el(`
     <div>
-      <h1>Loyalty settings</h1>
+      <div class="page-header">
+        <h1>Settings</h1>
+        <p>Configure your loyalty program rules and branding.</p>
+      </div>
+
       <div class="card">
-        <h2>Reward rules</h2>
+        <h2>${icons.gift} Reward rules</h2>
         <form id="rules-form">
           <label for="s-name">Business name</label>
           <input id="s-name" type="text" />
@@ -47,7 +52,7 @@ export function renderSettings(app: HTMLElement): { destroy: () => void } {
       </div>
 
       <div class="card">
-        <h2>Widget preview</h2>
+        <h2>${icons.eye} Widget preview</h2>
         <p class="muted">Preview the accent color and theme your customers will see.</p>
         <div class="opt-grid">
           <div>
@@ -66,14 +71,14 @@ export function renderSettings(app: HTMLElement): { destroy: () => void } {
       </div>
 
       <div class="card">
-        <h2>Server-to-server API key</h2>
+        <h2>${icons.shield} Server-to-server API key</h2>
         <p class="muted" id="key-note"></p>
         <div id="key-area"></div>
-        <button class="secondary" id="rotate-key">Rotate API key</button>
+        <button class="secondary" id="rotate-key">${icons.refresh} Rotate API key</button>
       </div>
 
       <div class="card">
-        <h2>Change password</h2>
+        <h2>${icons.shield} Change password</h2>
         <form id="password-form">
           <label for="s-current-password">Current password</label>
           <input id="s-current-password" type="password" required />
@@ -130,7 +135,6 @@ export function renderSettings(app: HTMLElement): { destroy: () => void } {
         : 'No API key generated yet — create one below.';
       renderKeyArea('unset');
 
-      // Live preview mirrors the saved brand color + theme.
       const pTheme = view.querySelector<HTMLSelectElement>('#p-theme')!;
       const pColor = view.querySelector<HTMLInputElement>('#p-color')!;
       const pPreview = view.querySelector('#p-preview')!;
@@ -176,7 +180,6 @@ export function renderSettings(app: HTMLElement): { destroy: () => void } {
     });
     try {
       await api<BusinessMe>('/businesses/me', { method: 'PATCH', body: payload });
-      // Completing reward setup advances onboarding.
       try {
         const b = await api<BusinessMe>('/businesses/me');
         if (b.onboardingStep < 1) {
@@ -202,8 +205,6 @@ export function renderSettings(app: HTMLElement): { destroy: () => void } {
       });
       renderKeyArea('shown', result.apiKey);
       keyNote.textContent = 'Key rotated successfully.';
-      // The "Connect your POS" onboarding step is detected automatically
-      // (hasApiKey), so no explicit advance is needed here.
     } catch (err) {
       showError((err as Error).message);
     }

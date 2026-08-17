@@ -1,5 +1,6 @@
 import { BusinessMe, Stats, setOnboardingStep } from '../api';
 import { el, escapeHtml } from '../dom';
+import { icons } from '../icons';
 
 const STEPS: Array<{
   key: string;

@@ -1,5 +1,6 @@
 import { api } from '../api';
 import { el, escapeHtml } from '../dom';
+import { icons } from '../icons';
 
 interface CustomerCard {
   stamps: number;
@@ -72,12 +73,14 @@ const REWARD_STATUS_CLS: Record<string, string> = {
 export function renderCustomers(app: HTMLElement): { destroy: () => void } {
   const view = el(`
     <div>
-      <h1>Customers</h1>
-      <p class="muted">People who have checked in at your business.</p>
+      <div class="page-header">
+        <h1>Customers</h1>
+        <p>People who have checked in at your business.</p>
+      </div>
 
       <div class="card cust-search-card">
         <div class="cust-search-row">
-          <input id="cust-q" type="search" placeholder="Search by email or phone…" />
+          <input id="cust-q" type="search" placeholder="Search by email or phone…" style="padding-left:36px;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2394a3b8%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><circle cx=%2211%22 cy=%2211%22 r=%228%22/><line x1=%2221%22 y1=%2221%22 x2=%2216.65%22 y2=%2216.65%22/></svg>');background-repeat:no-repeat;background-position:12px center;" />
           <select id="cust-sort">
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
@@ -93,7 +96,7 @@ export function renderCustomers(app: HTMLElement): { destroy: () => void } {
       </div>
 
       <div class="card">
-        <h2>Add customer</h2>
+        <h2>${icons.plus} Add customer</h2>
         <form id="cust-add-form">
           <label for="cust-add-email">Email</label>
           <input id="cust-add-email" type="email" placeholder="customer@example.com" />
@@ -106,7 +109,7 @@ export function renderCustomers(app: HTMLElement): { destroy: () => void } {
       </div>
 
       <div class="card" id="cust-list-card">
-        <h2>Customers</h2>
+        <h2>${icons.users} All customers</h2>
         <div id="cust-list"><p class="muted">Loading…</p></div>
         <div id="cust-pager" style="display:none" class="cust-pager"></div>
       </div>

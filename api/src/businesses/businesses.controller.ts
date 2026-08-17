@@ -91,9 +91,9 @@ export class BusinessesController {
   issueCheckinToken(@Req() req: { businessId: string }) {
     const token = this.jwt.sign(
       { businessId: req.businessId },
-      { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '30s' },
+        { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '120s' },
     );
-    return { checkinToken: token, expiresInSeconds: 30 };
+    return { checkinToken: token, expiresInSeconds: 120 };
   }
 
   /**

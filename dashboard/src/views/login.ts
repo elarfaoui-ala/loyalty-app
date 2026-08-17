@@ -1,12 +1,16 @@
 import { authApi, storeTokens } from '../api';
 import { el } from '../dom';
+import { icons } from '../icons';
 import { navigate } from '../router';
 
 export function renderLogin(app: HTMLElement): { destroy: () => void } {
   const view = el(`
-    <div class="auth-wrap">
-      <h1>Loyalty Dashboard</h1>
-      <p class="muted">Manage your loyalty card program.</p>
+    <div class="auth-wrap fade-in">
+      <div class="auth-header">
+        <div class="auth-logo">L</div>
+        <h1>Loyalty Dashboard</h1>
+        <p class="muted">Manage your loyalty card program.</p>
+      </div>
       <div class="tabs">
         <button data-tab="login" class="active">Sign in</button>
         <button data-tab="register">Create account</button>
@@ -19,7 +23,7 @@ export function renderLogin(app: HTMLElement): { destroy: () => void } {
         <label for="auth-password">Password</label>
         <input id="auth-password" type="password" placeholder="••••••••" minlength="8" required />
         <div class="msg-error" style="display:none"></div>
-        <button class="primary" type="submit">Continue</button>
+        <button class="primary" type="submit" style="width:100%;margin-top:20px">Continue</button>
       </form>
     </div>
   `);

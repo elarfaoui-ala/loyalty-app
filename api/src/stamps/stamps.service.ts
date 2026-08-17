@@ -1,7 +1,6 @@
 import {
   ConflictException,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { StampSource } from '@prisma/client';
@@ -194,6 +193,14 @@ export class StampsService {
   }
 
   async getCard(businessId: string, customerId: string) {
+    // Auto-create the card on first visit so new customers see an empty
+    // card instead of a 404.
+    await this.prisma.loyaltyCard.upsert({
+      where: { businessId_customerId: { businessId, customerId } },
+      update: {},
+      create: { businessId, customerId },
+    });
+
     const card = await this.prisma.loyaltyCard.findUnique({
       where: { businessId_customerId: { businessId, customerId } },
       include: {
@@ -208,9 +215,6 @@ export class StampsService {
         },
       },
     });
-    if (!card) {
-      throw new NotFoundException('No loyalty card found for this customer');
-    }
     return card;
   }
 }

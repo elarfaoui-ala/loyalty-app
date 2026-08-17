@@ -16,6 +16,7 @@ import { PrismaModule } from './prisma.module';
 import { PublicModule } from './public/public.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { StampsModule } from './stamps/stamps.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
@@ -35,6 +36,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     NotificationModule,
     SchedulerModule,
     WebhooksModule,
+    AnalyticsModule,
   ],
   controllers: [HealthController],
   providers: [

@@ -1,15 +1,18 @@
 import QRCode from 'qrcode';
 import { api } from '../api';
 import { el } from '../dom';
+import { icons } from '../icons';
 
 const REFRESH_INTERVAL_MS = 20_000;
 
 export function renderCheckin(app: HTMLElement): { destroy: () => void } {
   const view = el(`
-    <div class="checkin-wrap">
-      <h1>Customer check-in</h1>
-      <p class="muted">Keep this screen visible at the register. Customers scan the QR in
-      the loyalty widget to earn a stamp automatically.</p>
+    <div class="checkin-wrap fade-in">
+      <div class="page-header">
+        <h1>${icons.checkin} Customer check-in</h1>
+        <p>Keep this screen visible at the register. Customers scan the QR in
+        the loyalty widget to earn a stamp automatically.</p>
+      </div>
       <div class="qr-frame"><canvas id="qr-canvas"></canvas></div>
       <p class="countdown" id="qr-countdown"></p>
       <p class="muted" id="qr-error"></p>
@@ -29,8 +32,8 @@ export function renderCheckin(app: HTMLElement): { destroy: () => void } {
         { method: 'POST' },
       );
       await QRCode.toCanvas(canvas, result.checkinToken, {
-        width: 240,
-        margin: 1,
+        width: 260,
+        margin: 2,
         errorCorrectionLevel: 'M',
       });
       errorBox.textContent = '';

@@ -1,5 +1,6 @@
 import { api } from '../api';
 import { el, escapeHtml } from '../dom';
+import { icons } from '../icons';
 
 interface AuditEntry {
   id: string;
@@ -39,8 +40,10 @@ const ACTION_CLS: Record<string, string> = {
 export function renderAudit(app: HTMLElement): { destroy: () => void } {
   const view = el(`
     <div>
-      <h1>Audit log</h1>
-      <p class="muted">A record of changes made to your account and webhooks.</p>
+      <div class="page-header">
+        <h1>${icons.audit} Audit log</h1>
+        <p>A record of changes made to your account and webhooks.</p>
+      </div>
 
       <div class="card" id="audit-card">
         <div id="audit-list"><p class="muted">Loading…</p></div>

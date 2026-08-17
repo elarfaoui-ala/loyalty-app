@@ -1,5 +1,6 @@
 import { api, BusinessMe, setOnboardingStep } from '../api';
 import { el, escapeHtml } from '../dom';
+import { icons } from '../icons';
 
 const WIDGET_CDN = 'https://cdn.yourloyaltyapp.com/widget.js';
 
@@ -10,12 +11,14 @@ type Trigger = 'auto' | 'manual';
 export function renderIntegrate(app: HTMLElement): { destroy: () => void } {
   const view = el(`
     <div>
-      <h1>Integrate the widget</h1>
-      <p class="muted">
-        Add the loyalty widget to your website in under a minute. Configure the look,
-        copy the snippet, and paste it into your page just before the closing
-        <code>&lt;/body&gt;</code> tag.
-      </p>
+      <div class="page-header">
+        <h1>${icons.integrate} Integrate the widget</h1>
+        <p>
+          Add the loyalty widget to your website in under a minute. Configure the look,
+          copy the snippet, and paste it into your page just before the closing
+          <code>&lt;/body&gt;</code> tag.
+        </p>
+      </div>
 
       <div class="card">
         <h2>Widget options</h2>
