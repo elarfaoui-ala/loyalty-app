@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { BusinessesModule } from './businesses/businesses.module';
@@ -10,6 +11,7 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { HealthController } from './health.controller';
 import { PrismaModule } from './prisma.module';
 import { PublicModule } from './public/public.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
 import { StampsModule } from './stamps/stamps.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 
@@ -20,11 +22,13 @@ import { WebhooksModule } from './webhooks/webhooks.module';
       throttlers: [{ ttl: 60_000, limit: 100 }],
     }),
     PrismaModule,
+    ScheduleModule.forRoot(),
     AuthModule,
     BusinessesModule,
     CustomersModule,
     StampsModule,
     PublicModule,
+    SchedulerModule,
     WebhooksModule,
   ],
   controllers: [HealthController],
