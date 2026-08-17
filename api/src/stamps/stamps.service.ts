@@ -6,6 +6,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { StampSource } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { NotificationService } from '../common/notification.service';
 import { WebhookService } from '../webhooks/webhook.service';
 
 interface CreateStampParams {
@@ -27,6 +28,7 @@ export class StampsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly webhooks: WebhookService,
+    private readonly notifications: NotificationService,
   ) {}
 
   /**
@@ -172,6 +174,16 @@ export class StampsService {
         },
         tx,
       );
+
+      // Best-effort email to the customer (non-blocking — don't fail the
+      // stamp transaction if email delivery fails).
+      this.notifications.rewardEarned({
+        customerId,
+        businessId,
+        rewardType: reward.type,
+        rewardValue: reward.value,
+        expiresAt: reward.expiresAt,
+      }).catch(() => {});
 
       return {
         card: { ...updated, stamps: 0 },

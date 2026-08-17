@@ -1,5 +1,6 @@
 import { ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { NotificationService } from '../common/notification.service';
 import { WebhookService } from '../webhooks/webhook.service';
 import { StampsService } from './stamps.service';
 
@@ -63,12 +64,18 @@ function buildWebhooks(): WebhookService {
   } as unknown as WebhookService;
 }
 
+function buildNotifications(): NotificationService {
+  return {
+    rewardEarned: jest.fn().mockResolvedValue(undefined),
+  } as unknown as NotificationService;
+}
+
 const BASE_PARAMS = { businessId: 'biz1', customerId: 'cust1', source: 'QR' as const };
 
 describe('StampsService.createStamp', () => {
   it('creates the card, records the event and increments stamps', async () => {
     const tx = buildTx();
-    await new StampsService(buildPrisma(tx), buildWebhooks()).createStamp(BASE_PARAMS);
+    await new StampsService(buildPrisma(tx), buildWebhooks(), buildNotifications()).createStamp(BASE_PARAMS);
 
     expect(tx.loyaltyCard.upsert).toHaveBeenCalledWith({
       where: { businessId_customerId: { businessId: 'biz1', customerId: 'cust1' } },
@@ -96,7 +103,7 @@ describe('StampsService.createStamp', () => {
     tx.loyaltyCard.updateMany.mockResolvedValue({ count: 0 });
 
     await expect(
-      new StampsService(buildPrisma(tx), buildWebhooks()).createStamp(BASE_PARAMS),
+      new StampsService(buildPrisma(tx), buildWebhooks(), buildNotifications()).createStamp(BASE_PARAMS),
     ).rejects.toBeInstanceOf(ConflictException);
 
     expect(tx.stampEvent.create).not.toHaveBeenCalled();
@@ -111,7 +118,7 @@ describe('StampsService.createStamp', () => {
       rewards: [{ id: 'rew1', status: 'PENDING' }],
     });
 
-    const result = await new StampsService(buildPrisma(tx), buildWebhooks()).createStamp({
+    const result = await new StampsService(buildPrisma(tx), buildWebhooks(), buildNotifications()).createStamp({
       ...BASE_PARAMS,
       idempotencyKey: 'order_1',
     });
@@ -126,7 +133,7 @@ describe('StampsService.createStamp', () => {
     tx.stampEvent.findUnique.mockResolvedValue({ id: 'evt1', cardId: 'OTHER_CARD' });
 
     await expect(
-      new StampsService(buildPrisma(tx), buildWebhooks()).createStamp({
+      new StampsService(buildPrisma(tx), buildWebhooks(), buildNotifications()).createStamp({
         ...BASE_PARAMS,
         idempotencyKey: 'order_1',
       }),
@@ -139,7 +146,7 @@ describe('StampsService.createStamp', () => {
     tx.reward.create.mockResolvedValue({ id: 'rew1', type: 'PERCENT_OFF', value: 100 });
     tx.stampEvent.create.mockResolvedValue({ id: 'evt2' });
 
-    const result = await new StampsService(buildPrisma(tx), buildWebhooks()).createStamp(BASE_PARAMS);
+    const result = await new StampsService(buildPrisma(tx), buildWebhooks(), buildNotifications()).createStamp(BASE_PARAMS);
 
     expect(tx.reward.create).toHaveBeenCalledWith({
       data: {
@@ -161,7 +168,7 @@ describe('StampsService.createStamp', () => {
     const tx = buildTx();
     tx.loyaltyCard.update.mockResolvedValueOnce({ ...CARD, stamps: 9 });
 
-    const result = await new StampsService(buildPrisma(tx), buildWebhooks()).createStamp(BASE_PARAMS);
+    const result = await new StampsService(buildPrisma(tx), buildWebhooks(), buildNotifications()).createStamp(BASE_PARAMS);
 
     expect(tx.reward.create).not.toHaveBeenCalled();
     expect(result).toMatchObject({ reward: null });
