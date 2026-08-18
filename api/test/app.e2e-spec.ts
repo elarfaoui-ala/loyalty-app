@@ -136,6 +136,7 @@ describe('Loyalty API (e2e)', () => {
     });
     await prisma.webhookDelivery.deleteMany();
     await prisma.webhookEndpoint.deleteMany();
+    await prisma.auditLog.deleteMany();
     await prisma.reward.deleteMany();
     await prisma.stampEvent.deleteMany();
     await prisma.loyaltyCard.deleteMany();
@@ -297,7 +298,7 @@ describe('Loyalty API (e2e)', () => {
         { Authorization: `Bearer ${accessToken}` },
       );
       expect(res.status).toBe(201);
-      expect(res.body.expiresInSeconds).toBe(30);
+      expect(res.body.expiresInSeconds).toBe(120);
     });
   });
 
