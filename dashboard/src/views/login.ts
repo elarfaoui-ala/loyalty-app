@@ -1,6 +1,5 @@
 import { authApi, storeTokens } from '../api';
 import { el } from '../dom';
-import { icons } from '../icons';
 import { navigate } from '../router';
 
 export function renderLogin(app: HTMLElement): { destroy: () => void } {

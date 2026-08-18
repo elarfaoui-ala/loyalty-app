@@ -554,25 +554,66 @@ export class LoyaltyWidgetElement extends LitElement {
 
     /* ── Stamps visual ── */
     .stamps-row {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin: 10px 0;
+      display: grid;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .stamps-row.grid-5 {
+      grid-template-columns: repeat(5, 1fr);
+    }
+
+    .stamps-row.grid-4 {
+      grid-template-columns: repeat(4, 1fr);
     }
 
     .stamp-dot {
-      width: 22px;
-      height: 22px;
+      aspect-ratio: 1;
       border-radius: 50%;
-      border: 2px solid var(--panel-border);
+      border: 2.5px solid var(--panel-border);
       background: var(--panel-input-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: transparent;
       transition: all 0.3s ease;
+      position: relative;
     }
 
     .stamp-dot.filled {
       background: var(--brand);
       border-color: var(--brand);
-      box-shadow: 0 0 6px color-mix(in srgb, var(--brand) 30%, transparent);
+      color: white;
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--brand) 35%, transparent);
+      animation: widget-stamp-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes widget-stamp-pop {
+      0% { transform: scale(0.7); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+
+    .stamp-dot .stamp-num {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--panel-muted);
+    }
+
+    .stamp-dot.filled .stamp-num {
+      display: none;
+    }
+
+    .stamp-dot.filled::after {
+      content: '';
+      width: 8px;
+      height: 5px;
+      border-left: 2px solid white;
+      border-bottom: 2px solid white;
+      transform: rotate(-45deg);
+      margin-top: -2px;
     }
 
     /* ── Empty state ── */
@@ -1106,13 +1147,13 @@ export class LoyaltyWidgetElement extends LitElement {
     if (!this.card || !this.business) return html``;
     const pct = Math.min(100, (this.card.stamps / this.business.stampThreshold) * 100);
     const remaining = Math.max(0, this.business.stampThreshold - this.card.stamps);
-    const progress = this.strings.rewardProgress
-      .replace('{stamps}', String(this.card.stamps))
-      .replace('{threshold}', String(this.business.stampThreshold));
 
-    const stamps = Array.from({ length: this.business.stampThreshold }, (_, i) =>
-      i < this.card!.stamps,
-    );
+    const stampCount = this.business.stampThreshold;
+    const gridCols = stampCount <= 10 ? 'grid-5' : stampCount <= 8 ? 'grid-4' : 'grid-5';
+    const stamps = Array.from({ length: stampCount }, (_, i) => ({
+      filled: i < this.card!.stamps,
+      num: i + 1,
+    }));
 
     return html`
       <div style="position:relative">
@@ -1128,8 +1169,8 @@ export class LoyaltyWidgetElement extends LitElement {
           <div class="progress-fill" style="width:${pct}%"></div>
         </div>
         <p class="muted" style="text-align:center;margin:8px 0 14px">${remaining > 0 ? `${remaining} more ${remaining === 1 ? 'visit' : 'visits'} to your reward` : 'You earned a reward!'}</p>
-        <div class="stamps-row" style="justify-content:center">
-          ${stamps.map((filled) => html`<div class="stamp-dot ${filled ? 'filled' : ''}"></div>`)}
+        <div class="stamps-row ${gridCols}" style="justify-content:center">
+          ${stamps.map((s) => html`<div class="stamp-dot ${s.filled ? 'filled' : ''}"><span class="stamp-num">${s.num}</span></div>`)}
         </div>
         <button class="primary" style="margin:14px 0" @click=${this.openCheckin}>
           ${icon(ICO.scan, 16)} Check in now

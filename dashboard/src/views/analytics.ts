@@ -38,7 +38,7 @@ function downloadBlob(filename: string, blob: Blob) {
   URL.revokeObjectURL(url);
 }
 
-function renderTrendChart(container: HTMLElement, data: TrendDay[], days: number) {
+function renderTrendChart(container: HTMLElement, data: TrendDay[]) {
   const maxStamps = Math.max(1, ...data.map((d) => d.stamps));
   const maxRewards = Math.max(1, ...data.map((d) => d.rewards + d.redemptions));
   const max = Math.max(maxStamps, maxRewards);
@@ -160,7 +160,7 @@ export function renderAnalytics(app: HTMLElement): { destroy: () => void } {
   const loadTrend = async () => {
     try {
       const data = await api<TrendDay[]>(`/businesses/me/analytics/trend?days=${trendDays}`);
-      renderTrendChart(trendChart, data, trendDays);
+      renderTrendChart(trendChart, data);
     } catch {
       trendChart.innerHTML = '<p class="muted" style="text-align:center">Could not load trend data</p>';
     }
